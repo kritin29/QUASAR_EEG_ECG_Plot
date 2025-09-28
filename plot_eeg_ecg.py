@@ -5,7 +5,6 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-# ----------------- arg parsing -----------------
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("-i","--input", required=True, help="CSV input path")
@@ -13,8 +12,9 @@ def parse_args():
     p.add_argument("--show-count", type=int, default=8,
                    help="How many EEG channels to show by default (others hidden in legend).")
     return p.parse_args()
+    
+#CSV LOADING
 
-# ----------------- csv loading & detection -----------------
 def load_csv(path: str) -> pd.DataFrame:
     return pd.read_csv(path, comment='#', header=0)
 
@@ -36,7 +36,7 @@ def fallback_eeg_columns(df: pd.DataFrame, time_col: str, ecg: List[str], cm: st
     skip |= {"Trigger","Time_Offset","ADC_Status","ADC_Sequence","Event","Comments","X3:"}
     return [c for c in df.columns if c not in skip and pd.api.types.is_numeric_dtype(df[c])]
 
-# ----------------- utilities -----------------
+
 def compute_p2p_median(df: pd.DataFrame, channels: List[str]) -> float:
     p2p = []
     for ch in channels:
@@ -65,7 +65,7 @@ def build_normalized_arrays(df: pd.DataFrame, channels: List[str], norm_spacing:
         ys.append(z + offsets[i])
     return ys, offsets
 
-# ----------------- build figure -----------------
+#BUILD FIGURE
 def build_figure(df: pd.DataFrame, time_col: str, eeg_chs: List[str], ecg_chs: List[str],
                  cm_col: str, show_count: int = 8):
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True,
@@ -80,7 +80,7 @@ def build_figure(df: pd.DataFrame, time_col: str, eeg_chs: List[str], ecg_chs: L
         "#7f8c8d","#bdc3c7","#34495e","#6c5ce7","#f78fb3","#00cec9"
     ]
 
-    # ---------- Top: ECG + CM ----------
+    
     for idx,ch in enumerate(ecg_chs):
         color = ecg_palette[idx % len(ecg_palette)]
         fig.add_trace(go.Scatter(
@@ -100,7 +100,7 @@ def build_figure(df: pd.DataFrame, time_col: str, eeg_chs: List[str], ecg_chs: L
 
     fig.update_yaxes(title_text="ECG / CM (raw units)", row=1, col=1)
 
-    # ---------- Bottom: EEG ----------
+    
     base_med = compute_p2p_median(df, eeg_chs)
     spacing_multipliers = [0.8, 1.0, 1.6, 2.4, 3.6]
     base_spacing_values = [max(1.0, base_med * m) for m in spacing_multipliers]
@@ -126,7 +126,7 @@ def build_figure(df: pd.DataFrame, time_col: str, eeg_chs: List[str], ecg_chs: L
 
     fig.update_yaxes(title_text="EEG (stacked, µV)", row=2, col=1)
 
-    # ---------- Controls ----------
+    #CONTROLS
     n_ecg = len(ecg_chs) + (1 if cm_col else 0)
     n_eeg = len(eeg_chs)
     total_traces = n_ecg + n_eeg
@@ -217,7 +217,7 @@ def build_figure(df: pd.DataFrame, time_col: str, eeg_chs: List[str], ecg_chs: L
 
     return fig
 
-# ----------------- main -----------------
+#MAIN
 def main():
     args = parse_args()
     try:
